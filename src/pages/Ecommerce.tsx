@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { ecommerceProducts, categories } from '@/data/mockData';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -10,10 +10,56 @@ import { Product } from '@/contexts/CartContext';
 const Ecommerce = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(['Todos']);
+  const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  const filteredProducts = ecommerceProducts.filter(product => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch products with categories
+        const { data: productsData } = await supabase
+          .from('products')
+          .select(`
+            *,
+            categories (name)
+          `)
+          .order('created_at', { ascending: false });
+
+        // Fetch categories
+        const { data: categoriesData } = await supabase
+          .from('categories')
+          .select('name')
+          .order('name');
+
+        // Transform products data
+        const transformedProducts = productsData?.map(product => ({
+          id: product.id,
+          name: product.name,
+          description: product.description,
+          price: Number(product.price),
+          image: product.image_url || '/placeholder.svg',
+          category: product.categories?.name || 'Sem categoria'
+        })) || [];
+
+        // Transform categories data
+        const categoryNames = ['Todos', ...(categoriesData?.map(cat => cat.name) || [])];
+
+        setProducts(transformedProducts);
+        setCategories(categoryNames);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'Todos' || product.category === selectedCategory;
@@ -65,23 +111,31 @@ const Ecommerce = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              onAddToCart={handleAddToCart}
-              onBuyNow={handleBuyNow}
-            />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              Nenhum produto encontrado com os filtros selecionados.
-            </p>
+            <p className="text-muted-foreground text-lg">Carregando produtos...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onBuyNow={handleBuyNow}
+                />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg">
+                  Nenhum produto encontrado com os filtros selecionados.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

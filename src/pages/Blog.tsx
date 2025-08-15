@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { blogProducts, blogCategories } from '@/data/mockData';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/Header';
@@ -8,6 +8,41 @@ import ProductCard from '@/components/ProductCard';
 const Blog = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [blogProducts, setBlogProducts] = useState<any[]>([]);
+  const [categories, setCategories] = useState<string[]>(['Todos']);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch blog products
+        const { data: products } = await supabase
+          .from('blog_products')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Transform data to match component expectations
+        const transformedProducts = products?.map(product => ({
+          id: product.id,
+          name: product.title,
+          description: product.description,
+          price: product.price || 0,
+          image: product.image_url || '/placeholder.svg',
+          category: 'Digital',
+          link: product.external_link
+        })) || [];
+
+        setBlogProducts(transformedProducts);
+        setCategories(['Todos', 'Digital']);
+      } catch (error) {
+        console.error('Error fetching blog products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const filteredProducts = blogProducts.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -33,7 +68,7 @@ const Blog = () => {
 
         {/* Categories Filter */}
         <div className="flex flex-wrap gap-2 mb-8 justify-center">
-          {blogCategories.map(category => (
+          {categories.map(category => (
             <Button
               key={category}
               variant={selectedCategory === category ? "default" : "outline"}
@@ -47,22 +82,30 @@ const Blog = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filteredProducts.map(product => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              isBlogProduct={true}
-            />
-          ))}
-        </div>
-
-        {filteredProducts.length === 0 && (
+        {loading ? (
           <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">
-              Nenhum produto encontrado com os filtros selecionados.
-            </p>
+            <p className="text-muted-foreground text-lg">Carregando produtos...</p>
           </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map(product => (
+                <ProductCard
+                  key={product.id}
+                  product={product}
+                  isBlogProduct={true}
+                />
+              ))}
+            </div>
+
+            {filteredProducts.length === 0 && !loading && (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground text-lg">
+                  Nenhum produto encontrado com os filtros selecionados.
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
