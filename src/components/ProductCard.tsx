@@ -1,8 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ShoppingCart, ExternalLink } from 'lucide-react';
+import { ShoppingCart, ExternalLink, Eye } from 'lucide-react';
 import { Product } from '@/contexts/CartContext';
 
 interface ProductCardProps {
@@ -18,6 +19,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onBuyNow, 
   isBlogProduct = false 
 }) => {
+  const navigate = useNavigate();
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -35,6 +37,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
     } else {
       onBuyNow?.(product);
     }
+  };
+
+  const handleViewProduct = () => {
+    navigate(`/produto/${product.id}`);
   };
 
   return (
@@ -75,24 +81,35 @@ const ProductCard: React.FC<ProductCardProps> = ({
             Ver Produto
           </Button>
         ) : (
-          <div className="flex space-x-2 w-full">
+          <div className="space-y-2 w-full">
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex-1" 
-              onClick={handleAddToCart}
+              className="w-full" 
+              onClick={handleViewProduct}
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Carrinho
+              <Eye className="w-4 h-4 mr-2" />
+              Ver Detalhes
             </Button>
-            <Button 
-              variant="whatsapp" 
-              size="sm" 
-              className="flex-1" 
-              onClick={handleBuyNow}
-            >
-              Comprar
-            </Button>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1" 
+                onClick={handleAddToCart}
+              >
+                <ShoppingCart className="w-4 h-4 mr-2" />
+                Carrinho
+              </Button>
+              <Button 
+                variant="whatsapp" 
+                size="sm" 
+                className="flex-1" 
+                onClick={handleBuyNow}
+              >
+                Comprar
+              </Button>
+            </div>
           </div>
         )}
       </CardFooter>
