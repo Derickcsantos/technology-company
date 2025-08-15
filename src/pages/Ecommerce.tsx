@@ -76,7 +76,7 @@ const Ecommerce = () => {
 
   const handleBuyNow = (product: Product) => {
     const message = `Olá! Gostaria de comprar:\n\n*${product.name}*\nPreço: R$ ${product.price.toFixed(2).replace('.', ',')}\n\n${product.description}`;
-    const whatsappUrl = `https://wa.me/c/5511952801212?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/5511986261007?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
