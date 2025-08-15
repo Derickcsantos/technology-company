@@ -33,7 +33,7 @@ const Cart = () => {
     message += `💰 *Total: ${formatPrice(getTotalPrice())}*\n\n`;
     message += "Gostaria de finalizar este pedido!";
 
-    const whatsappUrl = `https://wa.me/c/5511952801212?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/5511986261007?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 
