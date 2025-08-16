@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingBag, MessageSquare, Smartphone, Laptop, Monitor, Headphones } from 'lucide-react';
 import Header from '@/components/Header';
+import { Standard } from "@typebot.io/react";
 
 const Index = () => {
   const features = [
@@ -119,6 +120,28 @@ const Index = () => {
                 </Card>
               </Link>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Typebot Section */}
+      <section className="py-20 px-4">
+        <div className="container mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-foreground mb-4">
+              Perguntas Frequentes
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Tire suas dúvidas sobre nossos produtos e serviços
+            </p>
+          </div>
+          
+          <div className="max-w-4xl mx-auto">
+            <Standard
+              typebot="faq-marjf0x"
+              apiHost="https://typebot.io"
+              style={{ width: "100%", height: "600px" }}
+            />
           </div>
         </div>
       </section>

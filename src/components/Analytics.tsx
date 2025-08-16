@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, Users, ShoppingCart, TrendingUp } from 'lucide-react';
 
@@ -53,6 +53,10 @@ const Analytics = () => {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
 
+      // Usar funções do banco para melhor performance
+      const { data: monthlyRevenueData } = await supabase.rpc('get_monthly_revenue');
+      const { data: userGrowthData } = await supabase.rpc('get_user_growth');
+
       // Gráfico de pedidos por mês
       const { data: monthlyOrders } = await supabase
         .from('orders')
@@ -60,7 +64,12 @@ const Analytics = () => {
         .order('created_at', { ascending: true });
 
       const ordersChart = processMonthlyData(monthlyOrders || [], 'count');
-      const revenueChart = processMonthlyData(monthlyOrders || [], 'revenue');
+      
+      // Formatar dados de receita das funções do banco
+      const revenueChart = monthlyRevenueData?.map(item => ({
+        month: item.month,
+        value: parseFloat(String(item.revenue))
+      })) || [];
 
       // Gráfico de usuários por tipo
       const { data: userTypes } = await supabase
@@ -68,17 +77,15 @@ const Analytics = () => {
         .select('tipo');
 
       const userTypePie = [
-        { name: 'Clientes', value: userTypes?.filter(u => u.tipo === 'cliente').length || 0, color: '#8b5cf6' },
-        { name: 'Admins', value: userTypes?.filter(u => u.tipo === 'admin').length || 0, color: '#06b6d4' }
+        { name: 'Clientes', value: userTypes?.filter(u => u.tipo === 'cliente').length || 0, color: 'hsl(var(--primary))' },
+        { name: 'Admins', value: userTypes?.filter(u => u.tipo === 'admin').length || 0, color: 'hsl(var(--accent))' }
       ];
 
-      // Gráfico de usuários por mês
-      const { data: usersData } = await supabase
-        .from('users')
-        .select('created_at')
-        .order('created_at', { ascending: true });
-
-      const usersChart = processMonthlyData(usersData || [], 'count');
+      // Formatar dados de crescimento de usuários
+      const usersChart = userGrowthData?.map(item => ({
+        month: item.month,
+        value: parseInt(String(item.users))
+      })) || [];
 
       setData({
         totalUsers: usersCount || 0,
@@ -212,13 +219,27 @@ const Analytics = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={data.revenueChart}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(value) => [formatPrice(Number(value)), 'Receita']} />
-                <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
+              <AreaChart data={data.revenueChart}>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+                <YAxis tick={{ fontSize: 12 }} />
+                <Tooltip 
+                  formatter={(value) => [formatPrice(Number(value)), 'Receita']}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--card))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px'
+                  }} 
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="hsl(var(--success))" 
+                  fill="hsl(var(--success))"
+                  fillOpacity={0.3}
+                  strokeWidth={2} 
+                />
+              </AreaChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
