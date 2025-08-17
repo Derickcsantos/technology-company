@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ShoppingBag, MessageSquare, Smartphone, Laptop, Monitor, Headphones } from 'lucide-react';
 import Header from '@/components/Header';
 import { Standard } from "@typebot.io/react";
+import Footer from '@/components/Footer';
 
 const Index = () => {
   const features = [
@@ -41,7 +42,7 @@ const Index = () => {
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="container mx-auto text-center relative z-10">
           <h1 className="text-5xl md:text-7xl font-bold text-white mb-6">
-            TechStore
+            Technology
           </h1>
           <p className="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto">
             Sua loja completa de tecnologia com os melhores produtos e serviços digitais
@@ -172,6 +173,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };

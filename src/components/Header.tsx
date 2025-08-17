@@ -36,7 +36,7 @@ const Header: React.FC<HeaderProps> = ({ onSearch, searchQuery = '' }) => {
               <ShoppingCart className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-              TechStore
+              Technology
             </span>
           </Link>
 

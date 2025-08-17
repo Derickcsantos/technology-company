@@ -55,23 +55,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const hashedPassword = hashPassword(password);
       
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
-        .eq('password_hash', hashedPassword)
-        .single();
+      const { data, error } = await (supabase as any).rpc('login_user', {
+        p_email: email,
+        p_password_hash: hashedPassword
+      });
 
       if (error || !data) {
         return false;
       }
-
+      const row: any = Array.isArray(data) ? data[0] : data;
       const userData: User = {
-        id: data.id,
-        email: data.email,
-        name: data.name,
-        tipo: data.tipo as 'admin' | 'cliente',
-        phone: data.phone
+        id: row.id,
+        email: row.email,
+        name: row.name,
+        tipo: row.tipo as 'admin' | 'cliente',
+        phone: row.phone
       };
 
       setUser(userData);

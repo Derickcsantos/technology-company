@@ -6,6 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
 import { Product } from '@/contexts/CartContext';
+import Footer from '@/components/Footer';
 
 const Ecommerce = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -138,6 +139,7 @@ const Ecommerce = () => {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 };

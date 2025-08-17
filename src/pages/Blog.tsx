@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Header from '@/components/Header';
 import ProductCard from '@/components/ProductCard';
+import Footer from '@/components/Footer';
 
 const Blog = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,6 +109,7 @@ const Blog = () => {
           </>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
