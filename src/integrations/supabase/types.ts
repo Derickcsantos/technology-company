@@ -310,6 +310,19 @@ export type Database = {
           users: number
         }[]
       }
+      login_user: {
+        Args: { p_email: string; p_password_hash: string }
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          password_hash: string
+          phone: string | null
+          tipo: string
+          updated_at: string
+        }
+      }
     }
     Enums: {
       [_ in never]: never
