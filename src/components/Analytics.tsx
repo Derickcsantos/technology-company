@@ -30,10 +30,14 @@ const Analytics = () => {
 
   const loadAnalytics = async () => {
     try {
-      // Usar RPCs para totais (ignoram RLS)
-      const { data: usersCount } = await supabase.rpc('get_total_users');
-      const { data: ordersCount } = await supabase.rpc('get_total_orders');
-      const { data: totalRevenue } = await supabase.rpc('get_total_revenue');
+      // Usar RPCs que ignoram RLS para dados corretos
+      const { data: totalUsersData } = await supabase.rpc('get_total_users');
+      const { data: totalOrdersData } = await supabase.rpc('get_total_orders');
+      const { data: totalRevenueData } = await supabase.rpc('get_total_revenue');
+      
+      const usersCount = totalUsersData || 0;
+      const ordersCount = totalOrdersData || 0;
+      const totalRevenue = Number(totalRevenueData) || 0;
 
       // Assinaturas ativas
       const { count: subscriptionsCount } = await supabase
@@ -46,7 +50,7 @@ const Analytics = () => {
       const { data: userGrowthData } = await supabase.rpc('get_user_growth');
       const { data: monthlyOrdersData } = await supabase.rpc('get_monthly_orders');
 
-      // Transformar dados de pedidos
+      // Formatar dados de pedidos das funções do banco
       const ordersChart = monthlyOrdersData?.map(item => ({
         month: item.month,
         value: parseInt(String(item.orders))
@@ -58,7 +62,7 @@ const Analytics = () => {
         value: parseFloat(String(item.revenue))
       })) || [];
 
-      // Gráfico de usuários por tipo
+      // Gráfico de usuários por tipo (manter seleção direta pois é leitura simples)
       const { data: userTypes } = await supabase
         .from('users')
         .select('tipo');
@@ -75,9 +79,9 @@ const Analytics = () => {
       })) || [];
 
       setData({
-        totalUsers: Number(usersCount) || 0,
-        totalOrders: Number(ordersCount) || 0,
-        totalRevenue: Number(totalRevenue) || 0,
+        totalUsers: usersCount,
+        totalOrders: ordersCount,
+        totalRevenue,
         activeSubscriptions: subscriptionsCount || 0,
         ordersChart,
         usersChart,
@@ -89,28 +93,6 @@ const Analytics = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const processMonthlyData = (data: any[], type: 'count' | 'revenue') => {
-    const monthlyData: { [key: string]: number } = {};
-    
-    data.forEach(item => {
-      const date = new Date(item.created_at);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      if (type === 'count') {
-        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + 1;
-      } else if (type === 'revenue' && item.total) {
-        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + parseFloat(item.total);
-      }
-    });
-
-    return Object.entries(monthlyData)
-      .map(([month, value]) => ({
-        month: month,
-        value: value
-      }))
-      .sort((a, b) => a.month.localeCompare(b.month));
   };
 
   useEffect(() => {

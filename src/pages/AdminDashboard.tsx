@@ -99,7 +99,7 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // Carregar estatísticas usando RPCs
+      // Usar RPCs para estatísticas corretas (ignoram RLS)
       const { data: usersCount } = await supabase.rpc('get_total_users');
       const { data: ordersCount } = await supabase.rpc('get_total_orders');
       const { data: totalRevenue } = await supabase.rpc('get_total_revenue');
@@ -164,16 +164,15 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       let imageUrl = newProduct.image_url;
-
-      // Se tem arquivo, fazer upload
+      
+      // Se há um arquivo, faz upload primeiro
       if (newProduct.image_file) {
         const uploadedUrl = await handleImageUpload(newProduct.image_file, 'product-images');
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        }
+        if (!uploadedUrl) return; // Upload falhou
+        imageUrl = uploadedUrl;
       }
 
-      const { error } = await supabase.rpc('create_product', {
+      const { data, error } = await supabase.rpc('create_product', {
         p_name: newProduct.name,
         p_description: newProduct.description,
         p_price: parseFloat(newProduct.price),
@@ -281,16 +280,15 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       let imageUrl = newBlogProduct.image_url;
-
-      // Se tem arquivo, fazer upload
+      
+      // Se há um arquivo, faz upload primeiro
       if (newBlogProduct.image_file) {
         const uploadedUrl = await handleImageUpload(newBlogProduct.image_file, 'blog-images');
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        }
+        if (!uploadedUrl) return; // Upload falhou
+        imageUrl = uploadedUrl;
       }
 
-      const { error } = await supabase.rpc('create_blog_product', {
+      const { data, error } = await supabase.rpc('create_blog_product', {
         p_title: newBlogProduct.title,
         p_description: newBlogProduct.description,
         p_price: newBlogProduct.price ? parseFloat(newBlogProduct.price) : null,
@@ -338,14 +336,14 @@ const AdminDashboard = () => {
 
   const cancelEdit = () => {
     setEditingProduct(null);
-      setNewProduct({
-        name: '',
-        description: '',
-        price: '',
-        category_id: '',
-        image_url: '',
-        image_file: null
-      });
+    setNewProduct({
+      name: '',
+      description: '',
+      price: '',
+      category_id: '',
+      image_url: '',
+      image_file: null
+    });
   };
 
   if (loading) {
@@ -554,22 +552,23 @@ const AdminDashboard = () => {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="productImage">Imagem do Produto</Label>
+                        <Label htmlFor="productImage">Imagem</Label>
                         <div className="space-y-2">
                           <Input
                             id="productImage"
                             value={newProduct.image_url}
-                            onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
+                            onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value, image_file: null }))}
                             placeholder="URL da imagem (https://...)"
                           />
-                          <div className="text-xs text-muted-foreground text-center">OU</div>
+                          <div className="text-center text-muted-foreground text-sm">ou</div>
                           <Input
                             type="file"
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0] || null;
-                              setNewProduct(prev => ({ ...prev, image_file: file }));
+                              setNewProduct(prev => ({ ...prev, image_file: file, image_url: '' }));
                             }}
+                            className="cursor-pointer"
                           />
                         </div>
                       </div>
@@ -673,22 +672,23 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="blogProductImage">Imagem do Produto</Label>
+                    <Label htmlFor="blogProductImage">Imagem</Label>
                     <div className="space-y-2">
                       <Input
                         id="blogProductImage"
                         value={newBlogProduct.image_url}
-                        onChange={(e) => setNewBlogProduct(prev => ({ ...prev, image_url: e.target.value }))}
+                        onChange={(e) => setNewBlogProduct(prev => ({ ...prev, image_url: e.target.value, image_file: null }))}
                         placeholder="URL da imagem (https://...)"
                       />
-                      <div className="text-xs text-muted-foreground text-center">OU</div>
+                      <div className="text-center text-muted-foreground text-sm">ou</div>
                       <Input
                         type="file"
                         accept="image/*"
                         onChange={(e) => {
                           const file = e.target.files?.[0] || null;
-                          setNewBlogProduct(prev => ({ ...prev, image_file: file }));
+                          setNewBlogProduct(prev => ({ ...prev, image_file: file, image_url: '' }));
                         }}
+                        className="cursor-pointer"
                       />
                     </div>
                   </div>
