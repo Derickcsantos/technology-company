@@ -296,12 +296,69 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_blog_product: {
+        Args: {
+          p_description: string
+          p_external_link: string
+          p_image_url: string
+          p_price: number
+          p_title: string
+        }
+        Returns: {
+          created_at: string
+          description: string
+          external_link: string
+          id: string
+          image_url: string | null
+          price: number | null
+          title: string
+          updated_at: string
+        }
+      }
+      create_product: {
+        Args: {
+          p_category_id: string
+          p_description: string
+          p_image_url: string
+          p_name: string
+          p_price: number
+        }
+        Returns: {
+          category_id: string | null
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          name: string
+          price: number
+          updated_at: string
+        }
+      }
+      get_monthly_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          month: string
+          orders: number
+        }[]
+      }
       get_monthly_revenue: {
         Args: Record<PropertyKey, never>
         Returns: {
           month: string
           revenue: number
         }[]
+      }
+      get_total_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_total_revenue: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_total_users: {
+        Args: Record<PropertyKey, never>
+        Returns: number
       }
       get_user_growth: {
         Args: Record<PropertyKey, never>

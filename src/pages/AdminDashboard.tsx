@@ -41,7 +41,8 @@ const AdminDashboard = () => {
     description: '',
     price: '',
     category_id: '',
-    image_url: ''
+    image_url: '',
+    image_file: null as File | null
   });
 
   const [newBlogProduct, setNewBlogProduct] = useState({
@@ -49,7 +50,8 @@ const AdminDashboard = () => {
     description: '',
     price: '',
     external_link: '',
-    image_url: ''
+    image_url: '',
+    image_file: null as File | null
   });
 
   const [stats, setStats] = useState({
@@ -97,29 +99,19 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      // Carregar estatísticas
-      const { count: usersCount } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-
-      const { count: ordersCount } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true });
-
-      const { data: ordersTotal } = await supabase
-        .from('orders')
-        .select('total');
-
-      const totalRevenue = ordersTotal?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      // Carregar estatísticas usando RPCs
+      const { data: usersCount } = await supabase.rpc('get_total_users');
+      const { data: ordersCount } = await supabase.rpc('get_total_orders');
+      const { data: totalRevenue } = await supabase.rpc('get_total_revenue');
 
       setProducts(productsData || []);
       setBlogProducts(blogProductsData || []);
       setCategories(categoriesData || []);
       setOrders(ordersData || []);
       setStats({
-        totalRevenue,
-        totalOrders: ordersCount || 0,
-        totalUsers: usersCount || 0,
+        totalRevenue: Number(totalRevenue) || 0,
+        totalOrders: Number(ordersCount) || 0,
+        totalUsers: Number(usersCount) || 0,
         growthRate: 12.5
       });
     } catch (error) {
@@ -171,15 +163,23 @@ const AdminDashboard = () => {
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('products')
-        .insert({
-          name: newProduct.name,
-          description: newProduct.description,
-          price: parseFloat(newProduct.price),
-          category_id: newProduct.category_id,
-          image_url: newProduct.image_url
-        });
+      let imageUrl = newProduct.image_url;
+
+      // Se tem arquivo, fazer upload
+      if (newProduct.image_file) {
+        const uploadedUrl = await handleImageUpload(newProduct.image_file, 'product-images');
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const { error } = await supabase.rpc('create_product', {
+        p_name: newProduct.name,
+        p_description: newProduct.description,
+        p_price: parseFloat(newProduct.price),
+        p_category_id: newProduct.category_id,
+        p_image_url: imageUrl
+      });
 
       if (error) throw error;
 
@@ -193,7 +193,8 @@ const AdminDashboard = () => {
         description: '',
         price: '',
         category_id: '',
-        image_url: ''
+        image_url: '',
+        image_file: null
       });
       loadData();
     } catch (error) {
@@ -235,7 +236,8 @@ const AdminDashboard = () => {
         description: '',
         price: '',
         category_id: '',
-        image_url: ''
+        image_url: '',
+        image_file: null
       });
       loadData();
     } catch (error) {
@@ -278,15 +280,23 @@ const AdminDashboard = () => {
   const handleCreateBlogProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const { error } = await supabase
-        .from('blog_products')
-        .insert({
-          title: newBlogProduct.title,
-          description: newBlogProduct.description,
-          price: newBlogProduct.price ? parseFloat(newBlogProduct.price) : null,
-          external_link: newBlogProduct.external_link,
-          image_url: newBlogProduct.image_url
-        });
+      let imageUrl = newBlogProduct.image_url;
+
+      // Se tem arquivo, fazer upload
+      if (newBlogProduct.image_file) {
+        const uploadedUrl = await handleImageUpload(newBlogProduct.image_file, 'blog-images');
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
+      const { error } = await supabase.rpc('create_blog_product', {
+        p_title: newBlogProduct.title,
+        p_description: newBlogProduct.description,
+        p_price: newBlogProduct.price ? parseFloat(newBlogProduct.price) : null,
+        p_image_url: imageUrl,
+        p_external_link: newBlogProduct.external_link
+      });
 
       if (error) throw error;
 
@@ -300,7 +310,8 @@ const AdminDashboard = () => {
         description: '',
         price: '',
         external_link: '',
-        image_url: ''
+        image_url: '',
+        image_file: null
       });
       loadData();
     } catch (error) {
@@ -320,19 +331,21 @@ const AdminDashboard = () => {
       description: product.description,
       price: product.price.toString(),
       category_id: product.category_id,
-      image_url: product.image_url || ''
+      image_url: product.image_url || '',
+      image_file: null
     });
   };
 
   const cancelEdit = () => {
     setEditingProduct(null);
-    setNewProduct({
-      name: '',
-      description: '',
-      price: '',
-      category_id: '',
-      image_url: ''
-    });
+      setNewProduct({
+        name: '',
+        description: '',
+        price: '',
+        category_id: '',
+        image_url: '',
+        image_file: null
+      });
   };
 
   if (loading) {
@@ -541,13 +554,24 @@ const AdminDashboard = () => {
                         </Select>
                       </div>
                       <div>
-                        <Label htmlFor="productImage">URL da Imagem</Label>
-                        <Input
-                          id="productImage"
-                          value={newProduct.image_url}
-                          onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
-                          placeholder="https://..."
-                        />
+                        <Label htmlFor="productImage">Imagem do Produto</Label>
+                        <div className="space-y-2">
+                          <Input
+                            id="productImage"
+                            value={newProduct.image_url}
+                            onChange={(e) => setNewProduct(prev => ({ ...prev, image_url: e.target.value }))}
+                            placeholder="URL da imagem (https://...)"
+                          />
+                          <div className="text-xs text-muted-foreground text-center">OU</div>
+                          <Input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0] || null;
+                              setNewProduct(prev => ({ ...prev, image_file: file }));
+                            }}
+                          />
+                        </div>
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -649,13 +673,24 @@ const AdminDashboard = () => {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="blogProductImage">URL da Imagem</Label>
-                    <Input
-                      id="blogProductImage"
-                      value={newBlogProduct.image_url}
-                      onChange={(e) => setNewBlogProduct(prev => ({ ...prev, image_url: e.target.value }))}
-                      placeholder="https://..."
-                    />
+                    <Label htmlFor="blogProductImage">Imagem do Produto</Label>
+                    <div className="space-y-2">
+                      <Input
+                        id="blogProductImage"
+                        value={newBlogProduct.image_url}
+                        onChange={(e) => setNewBlogProduct(prev => ({ ...prev, image_url: e.target.value }))}
+                        placeholder="URL da imagem (https://...)"
+                      />
+                      <div className="text-xs text-muted-foreground text-center">OU</div>
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setNewBlogProduct(prev => ({ ...prev, image_file: file }));
+                        }}
+                      />
+                    </div>
                   </div>
                   <Button type="submit" variant="default" className="w-full">
                     <Plus className="w-4 h-4 mr-2" />

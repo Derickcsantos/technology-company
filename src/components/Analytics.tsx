@@ -30,22 +30,10 @@ const Analytics = () => {
 
   const loadAnalytics = async () => {
     try {
-      // Total de usuários
-      const { count: usersCount } = await supabase
-        .from('users')
-        .select('*', { count: 'exact', head: true });
-
-      // Total de pedidos
-      const { count: ordersCount } = await supabase
-        .from('orders')
-        .select('*', { count: 'exact', head: true });
-
-      // Receita total
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('total');
-      
-      const totalRevenue = orders?.reduce((sum, order) => sum + Number(order.total), 0) || 0;
+      // Usar RPCs para totais (ignoram RLS)
+      const { data: usersCount } = await supabase.rpc('get_total_users');
+      const { data: ordersCount } = await supabase.rpc('get_total_orders');
+      const { data: totalRevenue } = await supabase.rpc('get_total_revenue');
 
       // Assinaturas ativas
       const { count: subscriptionsCount } = await supabase
@@ -56,14 +44,13 @@ const Analytics = () => {
       // Usar funções do banco para melhor performance
       const { data: monthlyRevenueData } = await supabase.rpc('get_monthly_revenue');
       const { data: userGrowthData } = await supabase.rpc('get_user_growth');
+      const { data: monthlyOrdersData } = await supabase.rpc('get_monthly_orders');
 
-      // Gráfico de pedidos por mês
-      const { data: monthlyOrders } = await supabase
-        .from('orders')
-        .select('created_at, total')
-        .order('created_at', { ascending: true });
-
-      const ordersChart = processMonthlyData(monthlyOrders || [], 'count');
+      // Transformar dados de pedidos
+      const ordersChart = monthlyOrdersData?.map(item => ({
+        month: item.month,
+        value: parseInt(String(item.orders))
+      })) || [];
       
       // Formatar dados de receita das funções do banco
       const revenueChart = monthlyRevenueData?.map(item => ({
@@ -88,9 +75,9 @@ const Analytics = () => {
       })) || [];
 
       setData({
-        totalUsers: usersCount || 0,
-        totalOrders: ordersCount || 0,
-        totalRevenue,
+        totalUsers: Number(usersCount) || 0,
+        totalOrders: Number(ordersCount) || 0,
+        totalRevenue: Number(totalRevenue) || 0,
         activeSubscriptions: subscriptionsCount || 0,
         ordersChart,
         usersChart,
