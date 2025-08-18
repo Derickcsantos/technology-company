@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 const Ecommerce = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [sortBy, setSortBy] = useState('name');
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(['Todos']);
   const [loading, setLoading] = useState(true);
@@ -35,13 +36,14 @@ const Ecommerce = () => {
           .select('name')
           .order('name');
 
-        // Transform products data
+        // Transform products data - agora com suporte a múltiplas imagens
         const transformedProducts = productsData?.map(product => ({
           id: product.id,
           name: product.name,
           description: product.description,
           price: Number(product.price),
-          image: product.image_url || '/placeholder.svg',
+          image: product.images?.[0] || product.image_url || '/placeholder.svg',
+          images: product.images || (product.image_url ? [product.image_url] : []),
           category: product.categories?.name || 'Sem categoria'
         })) || [];
 
@@ -65,6 +67,14 @@ const Ecommerce = () => {
                          product.description.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = selectedCategory === 'Todos' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
+  }).sort((a, b) => {
+    if (sortBy === 'price-asc') {
+      return a.price - b.price;
+    } else if (sortBy === 'price-desc') {
+      return b.price - a.price;
+    } else {
+      return a.name.localeCompare(b.name);
+    }
   });
 
   const handleAddToCart = (product: Product) => {
@@ -96,19 +106,42 @@ const Ecommerce = () => {
           </p>
         </div>
 
-        {/* Categories Filter */}
-        <div className="flex flex-wrap gap-2 mb-8 justify-center">
-          {categories.map(category => (
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          {/* Categories Filter */}
+          <div className="flex flex-wrap gap-2 justify-center md:justify-start">
+            {categories.map(category => (
+              <Button
+                key={category}
+                variant={selectedCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedCategory(category)}
+                className="transition-all duration-300"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+          
+          {/* Price Sort */}
+          <div className="flex gap-2 justify-center md:justify-end md:ml-auto">
             <Button
-              key={category}
-              variant={selectedCategory === category ? "default" : "outline"}
+              variant={sortBy === 'price-asc' ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCategory(category)}
+              onClick={() => setSortBy('price-asc')}
               className="transition-all duration-300"
             >
-              {category}
+              Menor Preço
             </Button>
-          ))}
+            <Button
+              variant={sortBy === 'price-desc' ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSortBy('price-desc')}
+              className="transition-all duration-300"
+            >
+              Maior Preço
+            </Button>
+          </div>
         </div>
 
         {/* Products Grid */}

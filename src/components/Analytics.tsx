@@ -62,15 +62,14 @@ const Analytics = () => {
         value: parseFloat(String(item.revenue))
       })) || [];
 
-      // Gráfico de usuários por tipo (manter seleção direta pois é leitura simples)
-      const { data: userTypes } = await supabase
-        .from('users')
-        .select('tipo');
-
-      const userTypePie = [
-        { name: 'Clientes', value: userTypes?.filter(u => u.tipo === 'cliente').length || 0, color: 'hsl(var(--primary))' },
-        { name: 'Admins', value: userTypes?.filter(u => u.tipo === 'admin').length || 0, color: 'hsl(var(--accent))' }
-      ];
+      // Usar função do banco para tipos de usuário
+      const { data: userTypesData } = await supabase.rpc('get_user_types');
+      
+      const userTypePie = userTypesData?.map(item => ({
+        name: item.tipo === 'admin' ? 'Admins' : 'Clientes', 
+        value: parseInt(String(item.count)),
+        color: item.tipo === 'admin' ? 'hsl(var(--accent))' : 'hsl(var(--primary))'
+      })) || [];
 
       // Formatar dados de crescimento de usuários
       const usersChart = userGrowthData?.map(item => ({

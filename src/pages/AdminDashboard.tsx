@@ -42,7 +42,8 @@ const AdminDashboard = () => {
     price: '',
     category_id: '',
     image_url: '',
-    image_file: null as File | null
+    image_files: [] as File[],
+    images: [] as string[]
   });
 
   const [newBlogProduct, setNewBlogProduct] = useState({
@@ -163,24 +164,41 @@ const AdminDashboard = () => {
   const handleCreateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      let imageUrl = newProduct.image_url;
+      let allImages = [...newProduct.images];
       
-      // Se há um arquivo, faz upload primeiro
-      if (newProduct.image_file) {
-        const uploadedUrl = await handleImageUpload(newProduct.image_file, 'product-images');
-        if (!uploadedUrl) return; // Upload falhou
-        imageUrl = uploadedUrl;
+      // Se há URL manual, adiciona
+      if (newProduct.image_url.trim()) {
+        allImages.push(newProduct.image_url);
+      }
+      
+      // Se há arquivos, faz upload primeiro
+      if (newProduct.image_files.length > 0) {
+        for (const file of newProduct.image_files) {
+          const uploadedUrl = await handleImageUpload(file, 'product-images');
+          if (uploadedUrl) {
+            allImages.push(uploadedUrl);
+          }
+        }
       }
 
+      // Cria produto primeiro
       const { data, error } = await supabase.rpc('create_product', {
         p_name: newProduct.name,
         p_description: newProduct.description,
         p_price: parseFloat(newProduct.price),
         p_category_id: newProduct.category_id,
-        p_image_url: imageUrl
+        p_image_url: allImages[0] || null
       });
 
       if (error) throw error;
+
+      // Atualiza com todas as imagens
+      if (allImages.length > 0 && data) {
+        await supabase
+          .from('products')
+          .update({ images: allImages })
+          .eq('id', data.id);
+      }
 
       toast({
         title: "Sucesso",
@@ -193,7 +211,8 @@ const AdminDashboard = () => {
         price: '',
         category_id: '',
         image_url: '',
-        image_file: null
+        image_files: [],
+        images: []
       });
       loadData();
     } catch (error) {
@@ -236,7 +255,8 @@ const AdminDashboard = () => {
         price: '',
         category_id: '',
         image_url: '',
-        image_file: null
+        image_files: [],
+        images: []
       });
       loadData();
     } catch (error) {
@@ -271,6 +291,32 @@ const AdminDashboard = () => {
       toast({
         title: "Erro",
         description: "Erro ao excluir produto",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteBlogProduct = async (productId: string) => {
+    if (!confirm('Tem certeza que deseja excluir este produto do blog?')) return;
+
+    try {
+      const { data, error } = await supabase.rpc('delete_blog_product', {
+        p_id: productId
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Produto do blog excluído com sucesso",
+      });
+
+      loadData();
+    } catch (error) {
+      console.error('Error deleting blog product:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir produto do blog",
         variant: "destructive",
       });
     }
@@ -329,21 +375,23 @@ const AdminDashboard = () => {
       description: product.description,
       price: product.price.toString(),
       category_id: product.category_id,
-      image_url: product.image_url || '',
-      image_file: null
+      image_url: '',
+      image_files: [],
+      images: product.images || []
     });
   };
 
   const cancelEdit = () => {
     setEditingProduct(null);
-    setNewProduct({
-      name: '',
-      description: '',
-      price: '',
-      category_id: '',
-      image_url: '',
-      image_file: null
-    });
+      setNewProduct({
+        name: '',
+        description: '',
+        price: '',
+        category_id: '',
+        image_url: '',
+        image_files: [],
+        images: []
+      });
   };
 
   if (loading) {
@@ -718,6 +766,13 @@ const AdminDashboard = () => {
                             onClick={() => window.open(product.external_link, '_blank')}
                           >
                             Ver
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteBlogProduct(product.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>

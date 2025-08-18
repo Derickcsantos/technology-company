@@ -176,6 +176,7 @@ export type Database = {
           description: string
           id: string
           image_url: string | null
+          images: string[] | null
           name: string
           price: number
           updated_at: string
@@ -186,6 +187,7 @@ export type Database = {
           description: string
           id?: string
           image_url?: string | null
+          images?: string[] | null
           name: string
           price: number
           updated_at?: string
@@ -196,6 +198,7 @@ export type Database = {
           description?: string
           id?: string
           image_url?: string | null
+          images?: string[] | null
           name?: string
           price?: number
           updated_at?: string
@@ -329,10 +332,26 @@ export type Database = {
           description: string
           id: string
           image_url: string | null
+          images: string[] | null
           name: string
           price: number
           updated_at: string
         }
+      }
+      delete_blog_product: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      get_all_users: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string
+          tipo: string
+        }[]
       }
       get_monthly_orders: {
         Args: Record<PropertyKey, never>
@@ -365,6 +384,13 @@ export type Database = {
         Returns: {
           month: string
           users: number
+        }[]
+      }
+      get_user_types: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          count: number
+          tipo: string
         }[]
       }
       login_user: {

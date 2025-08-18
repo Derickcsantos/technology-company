@@ -13,6 +13,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [product, setProduct] = useState<Product | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
   const { toast } = useToast();
@@ -41,7 +42,8 @@ const ProductDetail = () => {
           name: data.name,
           description: data.description,
           price: Number(data.price),
-          image: data.image_url || '/placeholder.svg',
+          image: data.images?.[0] || data.image_url || '/placeholder.svg',
+          images: data.images || (data.image_url ? [data.image_url] : []),
           category: data.categories?.name || 'Sem categoria'
         };
 
@@ -131,15 +133,38 @@ const ProductDetail = () => {
         </Button>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Product Image */}
+          {/* Product Images */}
           <div className="space-y-4">
             <div className="aspect-square overflow-hidden rounded-lg bg-secondary/20 border border-border/50">
               <img
-                src={product.image}
+                src={product.images?.[currentImageIndex] || product.image}
                 alt={product.name}
                 className="w-full h-full object-cover"
               />
             </div>
+            
+            {/* Thumbnails - mostrar apenas se há múltiplas imagens */}
+            {product.images && product.images.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto">
+                {product.images.map((image, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      index === currentImageIndex 
+                        ? 'border-primary' 
+                        : 'border-border/50 hover:border-primary/50'
+                    }`}
+                  >
+                    <img
+                      src={image}
+                      alt={`${product.name} - ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
