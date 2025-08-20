@@ -17,6 +17,9 @@ interface User {
   tipo: 'admin' | 'cliente';
   phone?: string;
   created_at: string;
+  subscription_plan?: string;
+  subscription_status?: string;
+  next_payment_date?: string;
 }
 
 const UserManagement = () => {
@@ -35,7 +38,7 @@ const UserManagement = () => {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase.rpc('get_all_users');
+      const { data, error } = await supabase.rpc('get_users_with_subscriptions');
 
       if (error) throw error;
       setUsers((data || []).map(user => ({ 
@@ -298,9 +301,29 @@ const UserManagement = () => {
                 {user.phone && (
                   <p className="text-xs text-muted-foreground">{user.phone}</p>
                 )}
-                <Badge variant={user.tipo === 'admin' ? 'default' : 'secondary'} className="mt-1">
-                  {user.tipo}
-                </Badge>
+                <div className="flex gap-2 mt-2">
+                  <Badge variant={user.tipo === 'admin' ? 'default' : 'secondary'}>
+                    {user.tipo}
+                  </Badge>
+                  {user.subscription_plan && (
+                    <Badge variant="outline" className="text-xs">
+                      {user.subscription_plan}
+                    </Badge>
+                  )}
+                  {user.subscription_status && (
+                    <Badge 
+                      variant={user.subscription_status === 'active' ? 'default' : 'secondary'} 
+                      className="text-xs"
+                    >
+                      {user.subscription_status === 'active' ? 'Ativo' : user.subscription_status}
+                    </Badge>
+                  )}
+                </div>
+                {user.next_payment_date && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Próximo pagamento: {new Date(user.next_payment_date).toLocaleDateString('pt-BR')}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button

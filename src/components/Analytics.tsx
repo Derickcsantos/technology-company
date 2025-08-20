@@ -13,6 +13,7 @@ interface AnalyticsData {
   usersChart: any[];
   revenueChart: any[];
   userTypePie: any[];
+  clientsByPlan: any[];
 }
 
 const Analytics = () => {
@@ -24,7 +25,8 @@ const Analytics = () => {
     ordersChart: [],
     usersChart: [],
     revenueChart: [],
-    userTypePie: []
+    userTypePie: [],
+    clientsByPlan: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,6 +51,8 @@ const Analytics = () => {
       const { data: monthlyRevenueData } = await supabase.rpc('get_monthly_revenue');
       const { data: userGrowthData } = await supabase.rpc('get_user_growth');
       const { data: monthlyOrdersData } = await supabase.rpc('get_monthly_orders');
+      const { data: userTypesData } = await supabase.rpc('get_user_types');
+      const { data: clientsByPlanData } = await supabase.rpc('get_clients_by_plan');
 
       // Formatar dados de pedidos das funções do banco
       const ordersChart = monthlyOrdersData?.map(item => ({
@@ -63,12 +67,17 @@ const Analytics = () => {
       })) || [];
 
       // Usar função do banco para tipos de usuário
-      const { data: userTypesData } = await supabase.rpc('get_user_types');
-      
       const userTypePie = userTypesData?.map(item => ({
         name: item.tipo === 'admin' ? 'Admins' : 'Clientes', 
         value: parseInt(String(item.count)),
         color: item.tipo === 'admin' ? 'hsl(var(--accent))' : 'hsl(var(--primary))'
+      })) || [];
+
+      // Dados de clientes por plano
+      const clientsByPlan = clientsByPlanData?.map(item => ({
+        name: item.plan_name,
+        value: parseInt(String(item.client_count)),
+        color: item.plan_name === 'Sem Plano' ? 'hsl(var(--muted))' : 'hsl(var(--primary))'
       })) || [];
 
       // Formatar dados de crescimento de usuários
@@ -85,7 +94,8 @@ const Analytics = () => {
         ordersChart,
         usersChart,
         revenueChart,
-        userTypePie
+        userTypePie,
+        clientsByPlan
       });
     } catch (error) {
       console.error('Error loading analytics:', error);
@@ -252,6 +262,33 @@ const Analytics = () => {
                 <Tooltip />
                 <Bar dataKey="value" fill="hsl(var(--success))" />
               </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-gradient-card border-border/50">
+          <CardHeader>
+            <CardTitle>Clientes por Plano IPTV</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={data.clientsByPlan}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {data.clientsByPlan.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>

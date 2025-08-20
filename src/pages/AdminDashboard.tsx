@@ -17,13 +17,18 @@ import {
   Edit, 
   Trash2,
   BarChart3,
-  Upload 
+  Upload,
+  FileDown,
+  ShoppingCart,
+  Calendar,
+  User
 } from 'lucide-react';
 import Header from '@/components/Header';
 import UserManagement from '@/components/UserManagement';
 import Analytics from '@/components/Analytics';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import OrdersTab from '@/components/OrdersTab';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -32,6 +37,7 @@ const AdminDashboard = () => {
   const [blogProducts, setBlogProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
+  const [allOrders, setAllOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [editingBlogProduct, setEditingBlogProduct] = useState<any>(null);
@@ -85,7 +91,7 @@ const AdminDashboard = () => {
         .select('*')
         .order('name');
 
-      // Carregar pedidos
+      // Carregar pedidos recentes (para overview)
       const { data: ordersData } = await supabase
         .from('orders')
         .select(`
@@ -100,6 +106,9 @@ const AdminDashboard = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
+      // Carregar todos os pedidos
+      const { data: allOrdersData } = await supabase.rpc('get_all_orders');
+
       // Usar RPCs para estatísticas corretas (ignoram RLS)
       const { data: usersCount } = await supabase.rpc('get_total_users');
       const { data: ordersCount } = await supabase.rpc('get_total_orders');
@@ -109,6 +118,7 @@ const AdminDashboard = () => {
       setBlogProducts(blogProductsData || []);
       setCategories(categoriesData || []);
       setOrders(ordersData || []);
+      setAllOrders(allOrdersData || []);
       setStats({
         totalRevenue: Number(totalRevenue) || 0,
         totalOrders: Number(ordersCount) || 0,
@@ -131,6 +141,52 @@ const AdminDashboard = () => {
       style: 'currency',
       currency: 'BRL'
     }).format(price);
+  };
+
+  const downloadReport = () => {
+    import('jspdf').then(({ default: jsPDF }) => {
+      import('jspdf-autotable').then(() => {
+        const doc = new jsPDF();
+        
+        // Título
+        doc.setFontSize(20);
+        doc.text('Relatório de Vendas', 14, 22);
+        
+        // Data
+        doc.setFontSize(12);
+        doc.text(`Gerado em: ${new Date().toLocaleDateString('pt-BR')}`, 14, 32);
+        
+        // Resumo
+        doc.text(`Total de Pedidos: ${stats.totalOrders}`, 14, 45);
+        doc.text(`Receita Total: ${formatPrice(stats.totalRevenue)}`, 14, 52);
+        doc.text(`Total de Usuários: ${stats.totalUsers}`, 14, 59);
+        
+        // Tabela de pedidos
+        const tableData = allOrders.map(order => [
+          order.id.slice(0, 8),
+          order.user_name || 'N/A',
+          formatPrice(Number(order.total)),
+          order.status === 'pending' ? 'Pendente' : 
+          order.status === 'completed' ? 'Concluído' : order.status,
+          new Date(order.created_at).toLocaleDateString('pt-BR')
+        ]);
+        
+        (doc as any).autoTable({
+          head: [['ID', 'Cliente', 'Valor', 'Status', 'Data']],
+          body: tableData,
+          startY: 70,
+          styles: { fontSize: 9 },
+          headStyles: { fillColor: [66, 139, 202] }
+        });
+        
+        doc.save('relatorio-vendas.pdf');
+        
+        toast({
+          title: "Sucesso",
+          description: "Relatório baixado com sucesso",
+        });
+      });
+    });
   };
 
   const handleImageUpload = async (file: File, bucket: string) => {
@@ -474,13 +530,14 @@ const AdminDashboard = () => {
 
         {/* Main Content */}
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview">Visão Geral</TabsTrigger>
             <TabsTrigger value="products">Produtos</TabsTrigger>
             <TabsTrigger value="blog">Blog</TabsTrigger>
             <TabsTrigger value="orders">Pedidos</TabsTrigger>
             <TabsTrigger value="users">Usuários</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="reports">Relatórios</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -784,40 +841,7 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="orders" className="space-y-6">
-            <Card className="bg-gradient-card border-border/50">
-              <CardHeader>
-                <CardTitle>Gerenciar Pedidos</CardTitle>
-              </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {orders.map(order => (
-                      <div key={order.id} className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-                        <div>
-                          <p className="font-semibold">#{order.id.slice(0, 8)}</p>
-                          <p className="text-sm text-muted-foreground">{order.users?.name}</p>
-                          <p className="text-xs text-muted-foreground">{order.users?.email}</p>
-                          <Badge variant="secondary" className="mt-1">
-                            {order.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="text-right">
-                            <p className="font-bold">{formatPrice(order.total)}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {new Date(order.created_at).toLocaleDateString('pt-BR')}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {orders.length === 0 && (
-                      <p className="text-center text-muted-foreground py-8">
-                        Nenhum pedido encontrado
-                      </p>
-                    )}
-                  </div>
-              </CardContent>
-            </Card>
+            <OrdersTab />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-6">
@@ -826,6 +850,61 @@ const AdminDashboard = () => {
 
           <TabsContent value="analytics" className="space-y-6">
             <Analytics />
+          </TabsContent>
+
+          <TabsContent value="reports" className="space-y-6">
+            <Card className="bg-gradient-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileDown className="w-5 h-5" />
+                  Relatórios
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid md:grid-cols-2 gap-4">
+                  <Card className="bg-secondary/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Relatório de Vendas</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground mb-4">
+                        Baixe um relatório completo com todos os pedidos e estatísticas de vendas
+                      </p>
+                      <Button onClick={downloadReport} className="w-full">
+                        <FileDown className="w-4 h-4 mr-2" />
+                        Baixar PDF
+                      </Button>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-secondary/20">
+                    <CardHeader>
+                      <CardTitle className="text-lg">Resumo Executivo</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Total de Pedidos:</span>
+                          <span className="font-bold">{stats.totalOrders}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Receita Total:</span>
+                          <span className="font-bold">{formatPrice(stats.totalRevenue)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Total de Usuários:</span>
+                          <span className="font-bold">{stats.totalUsers}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Crescimento:</span>
+                          <span className="font-bold text-success">+{stats.growthRate}%</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { User, CreditCard, Calendar, Package, Star, Crown, Zap } from 'lucide-react';
 import Header from '@/components/Header';
+import ClientProfileEditor from '@/components/ClientProfileEditor';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -164,191 +165,75 @@ const Dashboard = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Recent Orders */}
-              <Card className="bg-gradient-card border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="w-5 h-5 text-primary" />
-                    Pedidos Recentes
-                  </CardTitle>
-                  <CardDescription>
-                    Acompanhe seus últimos pedidos
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {orders.length > 0 ? orders.map(order => (
-                      <div key={order.id} className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
-                        <div>
-                          <h3 className="font-medium text-foreground">{order.product}</h3>
-                          <p className="text-sm text-muted-foreground">{order.date}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-foreground">{formatPrice(order.price)}</p>
-                          <Badge className={getStatusColor(order.status)}>
-                            {order.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    )) : (
-                      <p className="text-muted-foreground text-center py-4">
-                        Nenhum pedido encontrado
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* IPTV Plans */}
-              <Card className="bg-gradient-card border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-accent" />
-                    Planos IPTV Disponíveis
-                  </CardTitle>
-                  <CardDescription>
-                    Escolha o melhor plano para você
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {userSubscription ? (
-                    <div className="text-center py-6">
-                      <Crown className="w-12 h-12 text-accent mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-foreground mb-2">
-                        Plano Ativo: {userSubscription.iptv_plans?.name}
-                      </h3>
-                      <p className="text-muted-foreground mb-4">
-                        Próximo pagamento: {new Date(userSubscription.next_payment_date).toLocaleDateString('pt-BR')}
-                      </p>
-                      <Badge className="bg-success text-success-foreground">
-                        Status: {userSubscription.status === 'active' ? 'Ativo' : userSubscription.status}
-                      </Badge>
-                    </div>
-                  ) : (
-                    <div className="grid md:grid-cols-3 gap-4">
-                      {plans.map(plan => (
-                        <Card key={plan.id} className="relative bg-card hover:shadow-card-hover transition-all duration-300">
-                          <CardHeader>
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{plan.name}</CardTitle>
-                              {plan.interval.includes('12') && (
-                                <Badge className="bg-accent text-accent-foreground">
-                                  Mais Popular
-                                </Badge>
-                              )}
-                            </div>
-                            <CardDescription>{plan.description}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="text-center mb-4">
-                              <span className="text-3xl font-bold text-primary">
-                                {formatPrice(plan.price)}
-                              </span>
-                              <span className="text-muted-foreground">/{plan.interval}</span>
-                            </div>
-                            <ul className="space-y-2 mb-6 text-sm">
-                              {plan.features.map((feature, idx) => (
-                                <li key={idx} className="flex items-center gap-2">
-                                  <Zap className="w-4 h-4 text-success" />
-                                  {feature}
-                                </li>
-                              ))}
-                            </ul>
-                            <Button 
-                              onClick={() => handleSelectPlan(plan.id)} 
-                              className="w-full"
-                              variant={plan.interval.includes('12') ? 'gradient' : 'outline'}
-                            >
-                              {selectedPlan === plan.id ? 'Selecionado' : 'Selecionar Plano'}
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* User Account */}
-              <Card className="bg-gradient-card border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <User className="w-5 h-5 text-primary" />
-                    Minha Conta
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Nome</p>
-                    <p className="font-medium text-foreground">{user?.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Email</p>
-                    <p className="font-medium text-foreground">{user?.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Tipo de conta</p>
-                    <Badge variant="secondary">Cliente</Badge>
-                  </div>
-                  <Button variant="outline" className="w-full">
-                    Editar Perfil
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Subscription Status */}
-              <Card className="bg-gradient-card border-border/50">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-accent" />
-                    Status da Assinatura
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {userSubscription ? (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Plano:</span>
-                        <span className="font-medium">{userSubscription.iptv_plans?.name}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Valor:</span>
-                        <span className="font-bold text-primary">
-                          {formatPrice(userSubscription.iptv_plans?.price || 0)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-muted-foreground">Método:</span>
-                        <span className="font-medium">{userSubscription.payment_method}</span>
-                      </div>
-                      <Button variant="outline" size="sm" className="w-full">
-                        Gerenciar Assinatura
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-muted-foreground text-sm mb-3">
-                        Nenhuma assinatura ativa
-                      </p>
-                      <p className="text-sm text-muted-foreground mb-4">
-                        Assine um plano IPTV e tenha acesso a milhares de canais!
-                      </p>
-                      <Button variant="gradient" size="sm" className="w-full">
-                        Ver Planos
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+            {/* Profile & Subscription Management */}
+            <div className="space-y-8">
+              <ClientProfileEditor />
             </div>
           </div>
-        )}
-      </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* User Account Summary */}
+            <Card className="bg-gradient-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Resumo da Conta
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Nome</p>
+                  <p className="font-medium text-foreground">{user?.name}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Email</p>
+                  <p className="font-medium text-foreground">{user?.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Tipo de conta</p>
+                  <Badge variant="secondary">Cliente</Badge>
+                </div>
+                {userSubscription && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Plano Ativo</p>
+                    <Badge className="bg-success text-success-foreground">
+                      {userSubscription.iptv_plans?.name}
+                    </Badge>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card className="bg-gradient-card border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-accent" />
+                  Ações Rápidas
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button variant="outline" className="w-full justify-start">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Ver Histórico de Pagamentos
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Package className="w-4 h-4 mr-2" />
+                  Meus Pedidos
+                </Button>
+                <Button variant="outline" className="w-full justify-start">
+                  <Star className="w-4 h-4 mr-2" />
+                  Suporte Técnico
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 };
 
 export default Dashboard;

@@ -342,6 +342,19 @@ export type Database = {
         Args: { p_id: string }
         Returns: boolean
       }
+      get_all_orders: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          id: string
+          items: Json
+          status: string
+          total: number
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       get_all_users: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -351,6 +364,13 @@ export type Database = {
           name: string
           phone: string
           tipo: string
+        }[]
+      }
+      get_clients_by_plan: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          client_count: number
+          plan_name: string
         }[]
       }
       get_monthly_orders: {
@@ -390,6 +410,20 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: {
           count: number
+          tipo: string
+        }[]
+      }
+      get_users_with_subscriptions: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          next_payment_date: string
+          phone: string
+          subscription_plan: string
+          subscription_status: string
           tipo: string
         }[]
       }
